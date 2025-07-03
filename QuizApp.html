@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Quiz</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f4f7fa;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+    .container {
+      background: #ffffff;
+      padding: 30px;
+      margin-top: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 700px;
+    }
+    h1 {
+      text-align: center;
+      color: #2b3a55;
+      margin-bottom: 30px;
+    }
+    label {
+      display: block;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+    input[type="text"], input[type="email"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+      margin-top: 5px;
+    }
+    button {
+      background-color: #0057a4;
+      color: white;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    button:hover {
+      background-color: #003f7d;
+    }
+    .question {
+      margin-bottom: 20px;
+    }
+    .question p {
+      font-weight: bold;
+    }
+    .question label {
+      font-weight: normal;
+      margin-bottom: 5px;
+      display: block;
+    }
+    .question input[type="radio"] {
+      margin-right: 5px;
+    }
+    .hidden {
+      display: none;
+    }
+    .final-result {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 18px;
+      color: #2b3a55;
+    }
+    .pass { color: green; font-weight: bold; }
+    .fail { color: red; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Architecture and Engineering Standards Quiz</h1>
+    <div id="loginPanel">
+      <label>Name:
+        <input id="userName" placeholder="Enter your name" type="text" />
+      </label>
+      <label>Email:
+        <input id="userEmail" placeholder="Enter your email" type="email" />
+      </label>
+      <button onclick="startQuiz()">Start Quiz</button>
+    </div>
+    <div class="hidden" id="quizPanel"></div>
+    <div class="hidden final-result" id="finalScore"></div>
+  </div>
+
+  <script id="quiz-data" type="application/json">
+  {
+    "quizName": "Architecture and Engineering Standards",
+    "segmentTitles": [
+      "Segment 1: Medallion Architecture",
+      "Segment 2: Data Contracts",
+      "Segment 3: Data Integration"
+    ],
+    "segments": [
+      [
+        {
+          "question": "What is the main goal of the Medallion Architecture?",
+          "options": [
+            "To reduce data quality checks",
+            "To structure data into trusted stages for analysis",
+            "To enable ad-hoc data processing",
+            "To replace metadata management"
+          ],
+          "answer": 1
+        },
+        {
+          "question": "Which of the following is a typical Medallion Architecture stage?",
+          "options": [
+            "Bronze – Raw Data",
+            "Silver – Refined Data",
+            "Gold – Business Ready Data",
+            "All of the above"
+          ],
+          "answer": 3
+        }
+      ],
+      [
+        {
+          "question": "What is the purpose of a data contract?",
+          "options": [
+            "To enforce legal terms of use for tools",
+            "To define expectations between data producers and consumers",
+            "To approve spending on ETL tools",
+            "To document data visualization needs"
+          ],
+          "answer": 1
+        },
+        {
+          "question": "What should a good data contract include?",
+          "options": [
+            "Only KPIs",
+            "Availability and schema expectations",
+            "Deployment schedule",
+            "SLAs for APIs only"
+          ],
+          "answer": 1
+        }
+      ],
+      [
+        {
+          "question": "Which principle supports effective data integration?",
+          "options": [
+            "Ad hoc scripts",
+            "Manual data ingestion",
+            "Reusability and standardization",
+            "Copy-paste logic"
+          ],
+          "answer": 2
+        },
+        {
+          "question": "What is a key benefit of standard data integration patterns?",
+          "options": [
+            "They reduce testing effort",
+            "They support scalable, maintainable pipelines",
+            "They make dashboards prettier",
+            "They eliminate the need for metadata"
+          ],
+          "answer": 1
+        }
+      ]
+    ]
+  }
+  </script>
+
+  <script>
+    const quizData = JSON.parse(document.getElementById("quiz-data").textContent);
+    const quizName = quizData.quizName;
+    const questions = quizData.segments;
+    const segmentTitles = quizData.segmentTitles;
+    const isSegmented = Array.isArray(questions[0]);
+
+    let userAnswers = [];
+    let questionLog = [];
+    let currentSegment = 0;
+    let userName = "";
+    let userEmail = "";
+
+    function startQuiz() {
+      userName = document.getElementById("userName").value;
+      userEmail = document.getElementById("userEmail").value;
+      if (!userName || !userEmail) {
+        alert("Please enter both name and email.");
+        return;
+      }
+      document.getElementById("loginPanel").classList.add("hidden");
+      document.getElementById("quizPanel").classList.remove("hidden");
+      showSegment();
+    }
+
+    function showSegment() {
+      const quizPanel = document.getElementById("quizPanel");
+      quizPanel.innerHTML = "";
+
+      const segment = isSegmented ? questions[currentSegment] : questions;
+      if (!segment || (!isSegmented && currentSegment > 0)) {
+        showFinalScore();
+        return;
+      }
+
+      const form = document.createElement("form");
+
+      if (isSegmented && segmentTitles && segmentTitles[currentSegment]) {
+        const heading = document.createElement("h2");
+        heading.textContent = segmentTitles[currentSegment];
+        heading.style.color = "#2b3a55";
+        heading.style.marginBottom = "20px";
+        quizPanel.appendChild(heading);
+      }
+
+      segment.forEach((q, i) => {
+        const div = document.createElement("div");
+        div.className = "question";
+        div.innerHTML = `<p>${q.question}</p>` +
+          q.options.map((opt, j) => `
+            <label><input type="radio" name="q${i}" value="${j}"> ${opt}</label>
+          `).join("");
+        form.appendChild(div);
+      });
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = isSegmented ? "Submit Segment" : "Submit Quiz";
+      btn.onclick = () => submitSegment(form, segment);
+      form.appendChild(btn);
+
+      quizPanel.appendChild(form);
+    }
+
+    function submitSegment(form, segment) {
+      let score = 0;
+      segment.forEach((q, i) => {
+        const selected = form.querySelector(`input[name=q${i}]:checked`);
+        const selectedVal = selected ? parseInt(selected.value) : null;
+        questionLog.push({
+          question: q.question,
+          selected: selectedVal !== null ? q.options[selectedVal] : "None",
+          correct: q.options[q.answer]
+        });
+        if (selectedVal === q.answer) score++;
+      });
+      userAnswers.push(score);
+
+      if (isSegmented) {
+        alert(`Segment completed.\nCorrect answers so far: ${userAnswers.reduce((a, b) => a + b, 0)}`);
+        currentSegment++;
+      } else {
+        currentSegment = 1;
+      }
+
+      showSegment();
+    }
+
+    function showFinalScore() {
+      const totalCorrect = userAnswers.reduce((a, b) => a + b, 0);
+      const totalQuestions = (isSegmented ? questions.flat() : questions).length;
+      const percentage = Math.round((totalCorrect / totalQuestions) * 100);
+      const passed = percentage >= 75;
+
+      const final = document.getElementById("finalScore");
+      final.classList.remove("hidden");
+      final.innerHTML = `
+        <h2>Final Score</h2>
+        <p><strong>${userName}</strong> (${userEmail})</p>
+        <p>Total Questions: ${totalQuestions}</p>
+        <p>Total Correct: ${totalCorrect}</p>
+        <p>Score: ${percentage}%</p>
+        <p class="${passed ? 'pass' : 'fail'}">${passed ? 'Pass 🎉' : 'Fail ❌'}</p>
+        <button onclick="resetQuiz()">Retake Quiz</button>
+      `;
+
+      sendToGoogleSheet(userName, userEmail, userAnswers, totalCorrect, totalQuestions, percentage, questionLog);
+    }
+
+    function resetQuiz() {
+      userAnswers = [];
+      questionLog = [];
+      currentSegment = 0;
+      document.getElementById("finalScore").classList.add("hidden");
+      document.getElementById("quizPanel").classList.add("hidden");
+      document.getElementById("loginPanel").classList.remove("hidden");
+    }
+
+    function sendToGoogleSheet(name, email, segments, total, totalQuestions, percentage, questionDetails) {
+      const data = {
+        quiz: quizName,
+        name: name,
+        email: email,
+        segments: segments.join("; "),
+        total: total,
+        totalQuestions: totalQuestions,
+        percentage: percentage,
+        questionDetails: questionDetails.map(q => `${q.question} | Selected: ${q.selected} | Correct: ${q.correct}`).join(" // ")
+      };
+
+      fetch("https://script.google.com/macros/s/AKfycbzaawvGcliMvxdC9d0-lBwu07PDBg_7Q2g-Pa9zUnHLH_XsIF7ypNqmAweG2n9-kZUP7w/exec", {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      }).then(() => {
+        alert("Your results have been submitted.");
+      }).catch(() => {
+        alert("There was an error submitting your results.");
+      });
+    }
+  </script>
+</body>
+</html>
